@@ -305,6 +305,12 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
       }
     },
 
+	/*
+	 * Need to capture the state from the current map (2D only)
+	 * - extent (x)
+	 * - visible layers 
+	 * - drawing 
+	 */
     _createMapstate: function(){
       var data, b;
       if(this.appConfig.map['3D']){
@@ -348,6 +354,12 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
       this.displayMapstates();
     },
 
+	/*
+	 * Need to apply the saved state to the current map (2D only)
+	 * - extent (x)
+	 * - visible layers 
+	 * - drawing 
+	 */
     _onMapstateClick: function(mapstate) {
       // summary:
       //    set the map extent or camera, depends on it's 2D/3D map
