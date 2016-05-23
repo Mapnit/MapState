@@ -196,7 +196,7 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
       if(mapstate.thumbnail){
         thumbnail = utils.processUrlInWidgetConfig(mapstate.thumbnail, this.folderUrl);
       }else{
-        thumbnail = this.folderUrl + 'images/thumbnail_default.png';
+        thumbnail = this.folderUrl + 'images/thumbnail_us.png';
       }
 
       node = new ImageNode({
