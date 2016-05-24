@@ -104,7 +104,8 @@ define([
         if (layerInfosObj && layerInfosObj.traversal) {
           layerInfosObj.traversal(lang.hitch(this, function(layerInfo) {
             mapObj.layers[layerInfo.id] = {
-              visible: layerInfo.isVisible()
+              visible: layerInfo.isVisible(), 
+			  opacity: layerInfo.getOpacity()
             };
           }));
         }

@@ -396,10 +396,16 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
     },
 
 	  _applyAppState: function(stateData, map) {
-		var layerOptions = stateData.layers;
+		var layerStateData = stateData.layers;
+		// restore layer visibility
 		this.layerInfosObj.restoreState({
-		  layerOptions: layerOptions || null
+		  layerOptions: layerStateData || null
 		});
+		// restore layer opacity
+      array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
+		rootLayerInfo.setOpacity(layerStateData[rootLayerInfo.id].opacity); 
+      }, this);
+		// restore map extent
 		if (stateData.extent) {
 		  map.setExtent(stateData.extent);
 		}
