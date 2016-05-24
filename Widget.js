@@ -24,13 +24,16 @@ define([
   'dojo/aspect',
   'dojo/string',
   'esri/SpatialReference',
+  './MapStateManager',  
+  'jimu/LayerInfos/LayerInfos',
   './ImageNode',
   'jimu/dijit/TileLayoutContainer',
   'jimu/utils',
   'libs/storejs/store'
 ],
 function(declare, lang, array, html, BaseWidget, on, aspect, string,
-  SpatialReference, ImageNode, TileLayoutContainer, utils, store) {
+  SpatialReference, MapStateManager, LayerInfos, 
+  ImageNode, TileLayoutContainer, utils, store) {
   return declare([BaseWidget], {
     //these two properties is defined in the BaseWidget
     baseClass: 'jimu-widget-mapstate',
@@ -53,6 +56,14 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
 
     //the status can be: stop, playing, none
     _playStatus: 'none',
+	
+	constructor: function(options) {
+		this.map = options.map; 
+		this.layerInfosObj = null; 
+		/*webmap id or widget name serving as a store key*/
+		this.storeKey = this.map.itemId || this.name; 
+		this.MapStateManager = MapStateManager.getInstance(this.storeKey);
+	}, 
 
     startup: function(){
       // summary:
@@ -90,21 +101,21 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
       //    see description in the BaseWidget
       // description:
       //    this function will the local cache if available
-      var localBks = this._getLocalCache();
-      if(localBks.length > 0){
-        this.mapstates = localBks;
-      }else{
-        if(this.appConfig.map['3D']){
-          this.mapstates = lang.clone(this.config.mapstates3D);
-        }else{
-          this.mapstates = lang.clone(this.config.mapstates2D);
-        }
-      }
+	  this.MapStateManager.getMapState().then(lang.hitch(this, function(stateData) {
+		LayerInfos.getInstance(this.map, this.map.itemInfo)
+		.then(lang.hitch(this, function(layerInfosObj) {
+		  this.layerInfosObj = layerInfosObj;
+		  if(stateData.extent || stateData.layers) {
+			  this.mapstates.push(stateData); 
 
-      if(this.mapstates.length === 0){
-        this._readMapstatesInWebmap();
-      }
-      this.displayMapstates();
+			  if(this.mapstates.length === 0){
+				this._readMapstatesInWebmap();
+			  }
+			  this.displayMapstates();
+		  }
+		}));
+	  }));
+
     },
 
     onClose: function(){
@@ -312,6 +323,7 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
 	 * - drawing 
 	 */
     _createMapstate: function(){
+	/*
       var data, b;
       if(this.appConfig.map['3D']){
         data = this.map.getCamera(new SpatialReference(4326));
@@ -326,12 +338,19 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
           extent: this.map.extent.toJson()
         };
       }
-
       this.mapstates.push(b);
       this._saveAllToLocalCache();
+	*/
+	
+	  LayerInfos.getInstance(this.map, this.map.itemInfo)
+		.then(lang.hitch(this, function(layerInfosObj) {
+		  this.layerInfosObj = layerInfosObj; 
+		  this.MapStateManager.saveMapState(this.map, this.layerInfosObj, this.mapstateName.value);
+		})); 
+	   
       this.resize();
     },
-
+	
     _onDeleteBtnClicked: function(){
 
       if(!this._canDelete || this.currentIndex === -1){
@@ -373,21 +392,20 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
       this._switchDeleteBtn();
 
       //require the module on demand
-      if(this.appConfig.map['3D']){
-        this._setCamera(mapstate);
-      }else{
-        require(['esri/geometry/Extent'], lang.hitch(this, function(Extent){
-          var ext = mapstate.extent, sr;
-          if(ext.spatialReference){
-            sr = new SpatialReference(ext.spatialReference);
-          }else{
-            sr = new SpatialReference({ wkid:4326});
-          }
-          this.map.setExtent(new Extent(ext));
-        }));
-      }
+      this._applyAppState(mapstate, this.map); 
     },
 
+	  _applyAppState: function(stateData, map) {
+		var layerOptions = stateData.layers;
+		this.layerInfosObj.restoreState({
+		  layerOptions: layerOptions || null
+		});
+		if (stateData.extent) {
+		  map.setExtent(stateData.extent);
+		}
+		//this._publishMapEvent(map);
+	  },
+	  	
     _setCamera: function(mapstate){
       this.map.setCamera(mapstate.camera, this.config.flyTime);
     },
