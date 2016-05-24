@@ -24,6 +24,8 @@ define([
   'dojo/aspect',
   'dojo/string',
   'esri/SpatialReference',
+  'esri/graphic', 
+  'esri/layers/GraphicsLayer',
   './MapStateManager',  
   'jimu/LayerInfos/LayerInfos',
   './ImageNode',
@@ -32,7 +34,7 @@ define([
   'libs/storejs/store'
 ],
 function(declare, lang, array, html, BaseWidget, on, aspect, string,
-  SpatialReference, MapStateManager, LayerInfos, 
+  SpatialReference, Graphic, GraphicsLayer, MapStateManager, LayerInfos, 
   ImageNode, TileLayoutContainer, utils, store) {
   return declare([BaseWidget], {
     //these two properties is defined in the BaseWidget
@@ -396,15 +398,31 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
     },
 
 	  _applyAppState: function(stateData, map) {
-		var layerStateData = stateData.layers;
+		var layerData = stateData.layers;
+		var graphicsData = stateData.graphicsLayers; 
+		//TODO: check the map itemId
 		// restore layer visibility
 		this.layerInfosObj.restoreState({
-		  layerOptions: layerStateData || null
+		  layerOptions: layerData || null
 		});
 		// restore layer opacity
-      array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
-		rootLayerInfo.setOpacity(layerStateData[rootLayerInfo.id].opacity); 
-      }, this);
+        array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
+		  rootLayerInfo.setOpacity(layerData[rootLayerInfo.id].opacity); 
+        }, this);
+		// restore the graphic layers
+		for(var graphicsLayerId in graphicsData) {
+			var graphicsLayer = map.getLayer(graphicsLayerId); 
+			if (! graphicsLayer) {
+				graphicsLayer = new GraphicsLayer({
+					id: graphicsLayerId
+				});
+				map.addLayer(graphicsLayer);
+			}
+		    array.forEach(graphicsData[graphicsLayerId], function(graphicsJson) {
+			    var graphic = new Graphic(graphicsJson);
+			    graphicsLayer.add(graphic); 
+		    }, this);
+		}
 		// restore map extent
 		if (stateData.extent) {
 		  map.setExtent(stateData.extent);

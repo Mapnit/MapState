@@ -16,6 +16,7 @@
 define([
   'dojo/_base/declare',
   'dojo/_base/lang',
+  'dojo/_base/array',
   'dojo/Deferred',
   'dojo/json',
   'esri/geometry/Extent',
@@ -23,7 +24,7 @@ define([
   'libs/storejs/store',
   'libs/md5/md5',
   'jimu/tokenUtils'
-  ], function(declare, lang, Deferred, json, Extent,
+  ], function(declare, lang, array, Deferred, json, Extent,
     SpatialReference, storejs, md5js, TokenUtils) {
     var instance = null;
     var clazz = declare(null, {
@@ -59,7 +60,6 @@ define([
         var mapState = storejs.get(mapStateKey);
         if (mapState && mapState.mapStateMd5 === this._getMapStateMd5()){
           var extent = mapState.map && mapState.map.extent;
-          var layers = mapState.map && mapState.map.layers;
           if (extent) {
             data.extent = new Extent(
               extent.xmin,
@@ -69,8 +69,13 @@ define([
               new SpatialReference(extent.spatialReference)
             );
           }
+          var layers = mapState.map && mapState.map.layers;
           if (layers) {
             data.layers = layers;
+          }
+		  var graphicsLayers = mapState.map && mapState.map.graphicsLayers;
+		  if (graphicsLayers) {
+            data.graphicsLayers = graphicsLayers;
           }
 		  data.name = mapState.name;
         } else {
@@ -89,6 +94,7 @@ define([
 
         var key = this._getMapStateKey();
         var mapObj = {
+		  mapId: map.itemId, 
           extent: {
             xmin: map.extent.xmin,
             xmax: map.extent.xmax,
@@ -99,7 +105,8 @@ define([
               wkt: map.extent.spatialReference.wkt
             }
           },
-          layers: {}
+          layers: {}, 
+		  graphicsLayers: {}
         };
         if (layerInfosObj && layerInfosObj.traversal) {
           layerInfosObj.traversal(lang.hitch(this, function(layerInfo) {
@@ -109,6 +116,15 @@ define([
             };
           }));
         }
+		array.forEach(map.graphicsLayerIds, function(graphicsLayerId) {
+			var graphicsLayer = map.getLayer(graphicsLayerId); 
+			if (graphicsLayer.graphics && graphicsLayer.graphics.length > 0) {
+				mapObj.graphicsLayers[graphicsLayerId] = []; 
+				array.forEach(graphicsLayer.graphics, function(graphic) {
+					mapObj.graphicsLayers[graphicsLayerId].push(graphic.toJson()); 
+				}, this); 
+			}
+		}, this);
         storejs.set(key, {
 		  name: mapstateName, 
           map: mapObj,
