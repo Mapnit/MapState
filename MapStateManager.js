@@ -78,6 +78,8 @@ define([
             data.graphicsLayers = graphicsLayers;
           }
 		  data.name = mapState.name;
+		  
+		  data.updateDate = mapState.updateDate; 
         } else {
           storejs.remove(mapStateKey);
         }
@@ -125,8 +127,10 @@ define([
 				}, this); 
 			}
 		}, this);
+		var now = new Date();
         storejs.set(key, {
 		  name: mapstateName, 
+		  updateDate: now.toLocaleString(), 
           map: mapObj,
           mapStateMd5: this._getMapStateMd5()
         });

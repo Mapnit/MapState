@@ -214,7 +214,7 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
 
       node = new ImageNode({
         img: thumbnail,
-        label: mapstate.displayName
+        label: mapstate.displayName + '<br/>' + mapstate.updateDate
       });
       on(node.domNode, 'click', lang.hitch(this, lang.partial(this._onMapstateClick, mapstate)));
 
