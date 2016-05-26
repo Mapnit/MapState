@@ -20,6 +20,7 @@ define([
   'dojo/_base/array',
   'dojo/_base/html',
   'jimu/BaseWidget',
+  'jimu/portalUtils', 
   'dojo/on',
   'dojo/aspect',
   'dojo/string',
@@ -33,7 +34,7 @@ define([
   'jimu/utils',
   'libs/storejs/store'
 ],
-function(declare, lang, array, html, BaseWidget, on, aspect, string,
+function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string,
   SpatialReference, Graphic, GraphicsLayer, MapStateManager, LayerInfos, 
   ImageNode, TileLayoutContainer, utils, store) {
   return declare([BaseWidget], {
@@ -62,8 +63,10 @@ function(declare, lang, array, html, BaseWidget, on, aspect, string,
 	constructor: function(options) {
 		this.map = options.map; 
 		this.layerInfosObj = null; 
-		/*webmap id or widget name serving as a store key*/
-		this.storeKey = this.map.itemId || this.name; 
+		/* get the username */
+		this.portal = portalUtils.getPortal(options.appConfig.portalUrl); 
+		/*username and webmap id to serve as a store key*/
+		this.storeKey = this.portal.user.username + "_" + this.map.itemId; 
 		this.MapStateManager = MapStateManager.getInstance(this.storeKey);
 	}, 
 
