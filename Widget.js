@@ -428,7 +428,8 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 	  _applyAppState: function(stateData, map) {
 		var layerData = stateData.layers;
 		var graphicsData = stateData.graphicsLayers; 
-		//TODO: check the map itemId
+		// no need to check the map itemId
+		// - because the stateData is retrieved for a given map itemId
 		// restore layer visibility
 		this.layerInfosObj.restoreState({
 		  layerOptions: layerData || null
