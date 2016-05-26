@@ -32,11 +32,12 @@ define([
   './ImageNode',
   'jimu/dijit/TileLayoutContainer',
   'jimu/utils',
+  'dojo/request/xhr', 
   'libs/storejs/store'
 ],
 function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string,
   SpatialReference, Graphic, GraphicsLayer, MapStateManager, LayerInfos, 
-  ImageNode, TileLayoutContainer, utils, store) {
+  ImageNode, TileLayoutContainer, utils, xhr, store) {
   return declare([BaseWidget], {
     //these two properties is defined in the BaseWidget
     baseClass: 'jimu-widget-mapstate',
@@ -62,11 +63,14 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 	
 	constructor: function(options) {
 		this.map = options.map; 
+		this.storeStrategy = options.config.storeStrategy; 
+		this.storeServiceUrl = options.config.storeServiceUrl; 
 		this.layerInfosObj = null; 
 		/* get the username */
 		this.portal = portalUtils.getPortal(options.appConfig.portalUrl); 
+		this.userName = this.portal.user.username; 
 		/*username and webmap id to serve as a store key*/
-		this.storeKey = this.portal.user.username + "_" + this.map.itemId; 
+		this.storeKey = this.userName + "_" + this.map.itemId; 
 		this.MapStateManager = MapStateManager.getInstance(this.storeKey);
 	}, 
 
@@ -100,13 +104,8 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
         }
       })));
     },
-
-    onOpen: function(){
-      // summary:
-      //    see description in the BaseWidget
-      // description:
-      //    this function will the local cache if available
-	  this.MapStateManager.getMapState().then(lang.hitch(this, function(stateData) {
+	
+	  _xxxMapstate: function(stateData) {
 		LayerInfos.getInstance(this.map, this.map.itemInfo)
 		.then(lang.hitch(this, function(layerInfosObj) {
 		  this.layerInfosObj = layerInfosObj;
@@ -119,8 +118,26 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 			  this.displayMapstates();
 		  }
 		}));
-	  }));
+	  }, 
 
+    onOpen: function(){
+      // summary:
+      //    see description in the BaseWidget
+      // description:
+      //    this function will the local cache if available
+	  if (this.storeStrategy === "remote") {
+		  xhr(this._composeStoreURL("query"), {
+			handleAs: "json", 
+			preventCache: "true"
+		  }).then(lang.hitch(this, function(stateData) {
+			  this._xxxMapstate(stateData); 
+		  }));
+	  } else {
+		  // by default, use local storage
+		  this.MapStateManager.getMapState().then(lang.hitch(this, function(stateData) {
+			  this._xxxMapstate(stateData); 
+		  }));
+	  }
     },
 
     onClose: function(){
@@ -350,7 +367,15 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 	  LayerInfos.getInstance(this.map, this.map.itemInfo)
 		.then(lang.hitch(this, function(layerInfosObj) {
 		  this.layerInfosObj = layerInfosObj; 
-		  this.MapStateManager.saveMapState(this.map, this.layerInfosObj, this.mapstateName.value);
+		  if (this.storeStrategy === "remote") {
+			  xhr(this._composeStoreURL("save", userName, mapId), {
+				  handleAs: "json", 
+				  method: "POST"
+			  });
+		  } else {
+			// by default, use local storage
+			this.MapStateManager.saveMapState(this.map, this.layerInfosObj, this.mapstateName.value);
+		  }
 		})); 
 	   
       this.resize();
@@ -474,7 +499,11 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
       }, this);
 
       mapstates = mapstateArray;
-    }
+    }, 
+	
+	_composeStoreURL: function(action) {
+		return this.storeServiceUrl + "/" + action + "/" + this.userName + "/" + this.map.itemId; 
+	}
 
   });
 });

@@ -1,5 +1,7 @@
 {
 	"mapstates2D": [],
 	"mapstates3D": [],
-	"flyTime": 3000
+	"flyTime": 3000, 
+	"storeStrategy": "local",
+	"storeServiceUrl": "http://localhost/UserConfig/MapStateService.svc"
 }
