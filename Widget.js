@@ -173,7 +173,6 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 
       this.mapstateList.addItems(items);
       this._switchDeleteBtn();
-      this._switchPlayBtn();
       this.resize();
     },
 
