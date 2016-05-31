@@ -149,7 +149,12 @@ define([
 			var key = this._getMapStateKey();
 			storejs.set(key, mapState);
 		}
-      }
+      }, 
+	  
+	  deleteMapState: function() {
+		var key = this._getMapStateKey();
+		storejs.remove(key);
+	  }
     });
 
     clazz.getInstance = function(token) {
