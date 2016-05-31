@@ -53,13 +53,6 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 
     //use this flag to control delete button
     _canDelete: false,
-
-    //use this flag to control play button
-    //play function work only in 3D map
-    _canPlay: false,
-
-    //the status can be: stop, playing, none
-    _playStatus: 'none',
 	
 	constructor: function(options) {
 		this.map = options.map; 
@@ -88,13 +81,6 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
         vmargin: 5
       }, this.mapstateListNode);
 
-      if(this.appConfig.map['3D']){
-        html.setStyle(this.btnPlay, 'display', '');
-        aspect.after(this.map, 'onCameraChangeEnd', lang.hitch(this, this._onFlytoEnd), true);
-        aspect.after(this.map, 'onCameraChangeBreak', lang.hitch(this, this._onFlytoBreak), true);
-      }else{
-        html.setStyle(this.btnPlay, 'display', 'none');
-      }
       this.mapstateList.startup();
 
       this.own(on(this.mapstateName, 'keydown', lang.hitch(this, function(evt){
@@ -204,25 +190,6 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
       }
     },
 
-    _switchPlayBtn: function(){
-      if(this.mapstates.length > 1){
-        html.removeClass(this.btnPlay, 'jimu-state-disabled');
-        this._canPlay = true;
-      }else{
-        html.addClass(this.btnPlay, 'jimu-state-disabled');
-        this._canPlay = false;
-      }
-    },
-
-    _switchPlayStatus: function(status){
-      this._playStatus = status;
-      if(this._playStatus === 'none' || this._playStatus === 'stop'){
-        this.btnPlay.innerHTML = utils.stripHTML(this.nls.labelPlay);
-      }else{
-        this.btnPlay.innerHTML = utils.stripHTML(this.nls.labelStop);
-      }
-    },
-
     _createMapstateNode: function(mapstate) {
       var thumbnail, node;
 
@@ -243,12 +210,8 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 
     _getKeysKey: function(){
       // summary:
-      //    we use className plus 2D/3D as the local storage key
-      if(this.appConfig.map['3D']){
-        return this.name + '.3D';
-      }else{
-        return this.name + '.2D';
-      }
+      //    we use className plus 2D as the local storage key
+      return this.name + '.2D';
     },
 
     _saveAllToLocalCache: function() {
@@ -283,30 +246,6 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
       return ret;
     },
 
-    _onFlytoEnd: function(/*jshint unused:false*/ camera){
-      // summary:
-      //    3D only.
-      if(this._playStatus === 'stop' || this._playStatus === 'none'){
-        return;
-      }
-      if(this.currentIndex + 1 === this.mapstateList.items.length){
-        this._switchPlayStatus('stop');
-        return;
-      }
-      this.currentIndex ++;
-      this.mapstateList.items[this.currentIndex].highLight();
-      setTimeout(lang.hitch(this, this._setCamera, this.mapstates[this.currentIndex]),
-        this.config.stopTime);
-    },
-
-    _onFlytoBreak: function(){
-      // summary:
-      //    3D only.
-      if(this._playStatus === 'playing'){
-        this._switchPlayStatus('stop');
-      }
-    },
-
     _onAddBtnClicked: function() {
       if (string.trim(this.mapstateName.value).length === 0) {
         html.setStyle(this.errorNode, {visibility: 'visible'});
@@ -321,21 +260,6 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
       this.mapstateName.value = '';
 
       this.displayMapstates();
-    },
-
-    _onPlayBtnClicked: function(){
-      if(!this._canPlay){
-        return;
-      }
-      if(this._playStatus === 'playing'){
-        this._switchPlayStatus('stop');
-      }else{
-        this._switchPlayStatus('playing');
-        this.currentIndex = 0;
-        this._switchDeleteBtn();
-        this.mapstateList.items[this.currentIndex].highLight();
-        this._setCamera(this.mapstates[this.currentIndex]);
-      }
     },
 
 	/*
@@ -411,7 +335,7 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 	 */
     _onMapstateClick: function(mapstate) {
       // summary:
-      //    set the map extent or camera, depends on it's 2D/3D map
+      //    set the map extent
       array.some(this.mapstates, function(b, i){
         if(b.displayName === mapstate.displayName){
           this.currentIndex = i;
@@ -458,10 +382,6 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 		}
 		//this._publishMapEvent(map);
 	  },
-	  	
-    _setCamera: function(mapstate){
-      this.map.setCamera(mapstate.camera, this.config.flyTime);
-    },
 
     _processDuplicateName: function(mapstates) {
       var mapstateArray = [];
