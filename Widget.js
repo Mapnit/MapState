@@ -122,27 +122,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 		  }).then(lang.hitch(this, function(stateDataText) {
 			  var stateData = json.parse(stateDataText, true);
 			  // transform the state data 
-			  var data = {}; 
-			  var extent = stateData.map && stateData.map.extent;
-			  if (extent) {
-				data.extent = new Extent(
-				  extent.xmin,
-				  extent.ymin,
-				  extent.xmax,
-				  extent.ymax,
-				  new SpatialReference(extent.spatialReference)
-				);
-			  }
-			  var layers = stateData.map && stateData.map.layers;
-			  if (layers) {
-				data.layers = layers;
-			  }
-			  var graphicsLayers = stateData.map && stateData.map.graphicsLayers;
-			  if (graphicsLayers) {
-				data.graphicsLayers = graphicsLayers;
-			  }
-			  data.name = stateData.name;			  
-			  data.updateDate = stateData.updateDate; 
+			  var data = this.MapStateManager._prepareMapState(stateData); 
 			  //
 			  this._addMapstate(data); 
 		  }));
@@ -320,63 +300,27 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 		.then(lang.hitch(this, function(layerInfosObj) {
 		  this.layerInfosObj = layerInfosObj; 
 		  if (this.storeStrategy === "remote") {
-			  // transform the state data
-			  var mapObj = {
-				  mapId: this.map.itemId, 
-				  extent: {
-					xmin: this.map.extent.xmin,
-					xmax: this.map.extent.xmax,
-					ymin: this.map.extent.ymin,
-					ymax: this.map.extent.ymax,
-					spatialReference: {
-					  wkid: this.map.extent.spatialReference.wkid,
-					  wkt: this.map.extent.spatialReference.wkt
-					}
-				  },
-				  layers: {}, 
-				  graphicsLayers: {}
-				};
-				if (layerInfosObj && layerInfosObj.traversal) {
-				  layerInfosObj.traversal(lang.hitch(this, function(layerInfo) {
-					mapObj.layers[layerInfo.id] = {
-					  visible: layerInfo.isVisible(), 
-					  opacity: layerInfo.getOpacity(), 
-					  layerDefinitions: layerInfo.layerObject.layerDefinitions
-					};
-				  }));
-				}
-				array.forEach(this.map.graphicsLayerIds, function(graphicsLayerId) {
-					var graphicsLayer = this.map.getLayer(graphicsLayerId); 
-					if (graphicsLayer.graphics && graphicsLayer.graphics.length > 0) {
-						mapObj.graphicsLayers[graphicsLayerId] = []; 
-						array.forEach(graphicsLayer.graphics, function(graphic) {
-							mapObj.graphicsLayers[graphicsLayerId].push(graphic.toJson()); 
-						}, this); 
-					}
-				}, this);
-				var now = new Date();
-				var stateData = {
-				  name: this.mapstateName.value, 
-				  updateDate: now.toLocaleString(), 
-				  map: mapObj
-				}; 
-				var stateDataText = json.stringify(stateData); 
-				// 
-			    xhr(this._composeStoreURL("save"), {
-				  method: "POST", 
-				  handleAs: "json",
-				  headers: {
-				    "X-Requested-With": null
-				  }, 
-				  data: stateDataText
-				}).then(lang.hitch(this, function(data) {
-					console.log('response: ' + data); 
-				}), lang.hitch(this, function(err) {
-					console.log('error: ' + err); 
-				})); 
+			// transform the state data
+			var stateData = this.MapStateManager._extractMapState(
+				this.map, this.layerInfosObj, this.mapstateName.value); 
+			var stateDataText = json.stringify(stateData); 
+			// 
+			xhr(this._composeStoreURL("save"), {
+			  method: "POST", 
+			  handleAs: "json",
+			  headers: {
+				"X-Requested-With": null
+			  }, 
+			  data: stateDataText
+			}).then(lang.hitch(this, function(data) {
+				console.log('response: ' + data); 
+			}), lang.hitch(this, function(err) {
+				console.log('error: ' + err); 
+			})); 
 		  } else {
 			// by default, use local storage
-			this.MapStateManager.saveMapState(this.map, this.layerInfosObj, this.mapstateName.value);
+			this.MapStateManager.saveMapState(
+				this.map, this.layerInfosObj, this.mapstateName.value);
 		  }
 		})); 
 	   
