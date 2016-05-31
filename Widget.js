@@ -215,44 +215,6 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
       return node;
     },
 
-    _getKeysKey: function(){
-      // summary:
-      //    we use className plus 2D as the local storage key
-      return this.name + '.2D';
-    },
-
-    _saveAllToLocalCache: function() {
-      // summary:
-      //    if user add/delete a mapstate, we will save all of the mapstates into the local storage.
-
-      var keys = [];
-      //clear
-      array.forEach(store.get(this._getKeysKey()), function(bName){
-        store.remove(bName);
-      }, this);
-
-      array.forEach(this.mapstates, function(mapstate){
-        var key = this._getKeysKey() + '.' + mapstate.displayName;
-        keys.push(key);
-        store.set(key, mapstate);
-      }, this);
-
-      store.set(this._getKeysKey(), keys);
-    },
-
-    _getLocalCache: function() {
-      var ret = [];
-      if(!store.get(this._getKeysKey())){
-        return ret;
-      }
-      array.forEach(store.get(this._getKeysKey()), function(bName){
-        if(bName.startWith(this._getKeysKey())){
-          ret.push(store.get(bName));
-        }
-      }, this);
-      return ret;
-    },
-
     _onAddBtnClicked: function() {
       if (string.trim(this.mapstateName.value).length === 0) {
         html.setStyle(this.errorNode, {visibility: 'visible'});
@@ -340,7 +302,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
         }
       }, this);
 
-      this._saveAllToLocalCache();
+      this.MapStateManager.deleteMapState(); 
 
       this.resize();
 
