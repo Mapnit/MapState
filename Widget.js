@@ -19,12 +19,14 @@ define([
   'dojo/_base/lang',
   'dojo/_base/array',
   'dojo/_base/html',
+  'dojo/json', 
   'jimu/BaseWidget',
   'jimu/portalUtils', 
   'dojo/on',
   'dojo/aspect',
   'dojo/string',
   'esri/SpatialReference',
+  'esri/geometry/Extent',
   'esri/graphic', 
   'esri/layers/GraphicsLayer',
   './MapStateManager',  
@@ -35,8 +37,8 @@ define([
   'dojo/request/xhr', 
   'libs/storejs/store'
 ],
-function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string,
-  SpatialReference, Graphic, GraphicsLayer, MapStateManager, LayerInfos, 
+function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, string,
+  SpatialReference, Extent, Graphic, GraphicsLayer, MapStateManager, LayerInfos, 
   ImageNode, TileLayoutContainer, utils, xhr, store) {
   return declare([BaseWidget], {
     //these two properties is defined in the BaseWidget
@@ -91,7 +93,7 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
       })));
     },
 	
-	  _xxxMapstate: function(stateData) {
+	  _addMapstate: function(stateData) {
 		LayerInfos.getInstance(this.map, this.map.itemInfo)
 		.then(lang.hitch(this, function(layerInfosObj) {
 		  this.layerInfosObj = layerInfosObj;
@@ -113,15 +115,41 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
       //    this function will the local cache if available
 	  if (this.storeStrategy === "remote") {
 		  xhr(this._composeStoreURL("query"), {
-			handleAs: "json", 
-			preventCache: "true"
-		  }).then(lang.hitch(this, function(stateData) {
-			  this._xxxMapstate(stateData); 
+			handleAs: "json",
+			headers: {
+			  "X-Requested-With": null
+			}
+		  }).then(lang.hitch(this, function(stateDataText) {
+			  var stateData = json.parse(stateDataText, true);
+			  // transform the state data 
+			  var data = {}; 
+			  var extent = stateData.map && stateData.map.extent;
+			  if (extent) {
+				data.extent = new Extent(
+				  extent.xmin,
+				  extent.ymin,
+				  extent.xmax,
+				  extent.ymax,
+				  new SpatialReference(extent.spatialReference)
+				);
+			  }
+			  var layers = stateData.map && stateData.map.layers;
+			  if (layers) {
+				data.layers = layers;
+			  }
+			  var graphicsLayers = stateData.map && stateData.map.graphicsLayers;
+			  if (graphicsLayers) {
+				data.graphicsLayers = graphicsLayers;
+			  }
+			  data.name = stateData.name;			  
+			  data.updateDate = stateData.updateDate; 
+			  //
+			  this._addMapstate(data); 
 		  }));
 	  } else {
 		  // by default, use local storage
 		  this.MapStateManager.getMapState().then(lang.hitch(this, function(stateData) {
-			  this._xxxMapstate(stateData); 
+			  this._addMapstate(stateData); 
 		  }));
 	  }
     },
@@ -292,10 +320,60 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
 		.then(lang.hitch(this, function(layerInfosObj) {
 		  this.layerInfosObj = layerInfosObj; 
 		  if (this.storeStrategy === "remote") {
-			  xhr(this._composeStoreURL("save", userName, mapId), {
-				  handleAs: "json", 
-				  method: "POST"
-			  });
+			  // transform the state data
+			  var mapObj = {
+				  mapId: this.map.itemId, 
+				  extent: {
+					xmin: this.map.extent.xmin,
+					xmax: this.map.extent.xmax,
+					ymin: this.map.extent.ymin,
+					ymax: this.map.extent.ymax,
+					spatialReference: {
+					  wkid: this.map.extent.spatialReference.wkid,
+					  wkt: this.map.extent.spatialReference.wkt
+					}
+				  },
+				  layers: {}, 
+				  graphicsLayers: {}
+				};
+				if (layerInfosObj && layerInfosObj.traversal) {
+				  layerInfosObj.traversal(lang.hitch(this, function(layerInfo) {
+					mapObj.layers[layerInfo.id] = {
+					  visible: layerInfo.isVisible(), 
+					  opacity: layerInfo.getOpacity(), 
+					  layerDefinitions: layerInfo.layerObject.layerDefinitions
+					};
+				  }));
+				}
+				array.forEach(this.map.graphicsLayerIds, function(graphicsLayerId) {
+					var graphicsLayer = this.map.getLayer(graphicsLayerId); 
+					if (graphicsLayer.graphics && graphicsLayer.graphics.length > 0) {
+						mapObj.graphicsLayers[graphicsLayerId] = []; 
+						array.forEach(graphicsLayer.graphics, function(graphic) {
+							mapObj.graphicsLayers[graphicsLayerId].push(graphic.toJson()); 
+						}, this); 
+					}
+				}, this);
+				var now = new Date();
+				var stateData = {
+				  name: this.mapstateName.value, 
+				  updateDate: now.toLocaleString(), 
+				  map: mapObj
+				}; 
+				var stateDataText = json.stringify(stateData); 
+				// 
+			    xhr(this._composeStoreURL("save"), {
+				  method: "POST", 
+				  handleAs: "json",
+				  headers: {
+				    "X-Requested-With": null
+				  }, 
+				  data: stateDataText
+				}).then(lang.hitch(this, function(data) {
+					console.log('response: ' + data); 
+				}), lang.hitch(this, function(err) {
+					console.log('error: ' + err); 
+				})); 
 		  } else {
 			// by default, use local storage
 			this.MapStateManager.saveMapState(this.map, this.layerInfosObj, this.mapstateName.value);
@@ -362,6 +440,11 @@ function(declare, lang, array, html, BaseWidget, portalUtils, on, aspect, string
         array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
 		  rootLayerInfo.setOpacity(layerData[rootLayerInfo.id].opacity); 
         }, this);
+		// restore layer definitions 
+        array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
+		  // apply at the map service level
+		  rootLayerInfo.setOpacity(layerData[rootLayerInfo.id].opacity); 
+        }, this);		
 		// restore the graphic layers
 		for(var graphicsLayerId in graphicsData) {
 			var graphicsLayer = map.getLayer(graphicsLayerId); 

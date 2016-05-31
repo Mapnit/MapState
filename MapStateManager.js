@@ -51,15 +51,10 @@ define([
         this.mapStateKey = 'mapstate_' +  this.token || window.path;
         return this.mapStateKey;
       },
-
-      getMapState: function() {
-        var def = new Deferred();
-        var data = {};
-        var mapStateKey = this._getMapStateKey();
-
-        var mapState = storejs.get(mapStateKey);
-        if (mapState && mapState.mapStateMd5 === this._getMapStateMd5()){
-          var extent = mapState.map && mapState.map.extent;
+	  
+	  _prepareMapState: function(mapState) {
+		  var data = {}; 
+		  var extent = mapState.map && mapState.map.extent;
           if (extent) {
             data.extent = new Extent(
               extent.xmin,
@@ -80,6 +75,18 @@ define([
 		  data.name = mapState.name;
 		  
 		  data.updateDate = mapState.updateDate; 
+		  
+		  return data; 
+	  }, 
+
+      getMapState: function() {
+        var def = new Deferred();
+        var data = {};
+        var mapStateKey = this._getMapStateKey();
+
+        var mapState = storejs.get(mapStateKey);
+        if (mapState && mapState.mapStateMd5 === this._getMapStateMd5()){
+          data = this._prepareMapState(mapState); 
         } else {
           storejs.remove(mapStateKey);
         }
@@ -88,13 +95,12 @@ define([
 
         return def;
       },
-
-      saveMapState: function(map, layerInfosObj, mapstateName) {
-        if (!map) {
-          return;
+	  
+	  _extractMapState: function(map, layerInfosObj, mapstateName) {
+		if (!map) {
+          return null;
         }
 
-        var key = this._getMapStateKey();
         var mapObj = {
 		  mapId: map.itemId, 
           extent: {
@@ -128,12 +134,21 @@ define([
 			}
 		}, this);
 		var now = new Date();
-        storejs.set(key, {
+		
+		return {
 		  name: mapstateName, 
 		  updateDate: now.toLocaleString(), 
           map: mapObj,
           mapStateMd5: this._getMapStateMd5()
-        });
+        }; 
+	  }, 
+
+      saveMapState: function(map, layerInfosObj, mapstateName) {        
+		var mapState = this._extractMapState(map, layerInfosObj, mapstateName); 
+		if (mapState) {
+			var key = this._getMapStateKey();
+			storejs.set(key, mapState);
+		}
       }
     });
 
