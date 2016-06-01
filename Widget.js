@@ -58,6 +58,11 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 	
 	constructor: function(options) {
 		this.map = options.map; 
+		if (this.map.itemInfo && this.map.itemInfo.item) {
+			this.mapName = options.map.itemInfo.item.title; 
+		} else {
+			this.mapName = "this webmap"; 
+		}
 		this.storeStrategy = options.config.storeStrategy; 
 		this.storeServiceUrl = options.config.storeServiceUrl; 
 		this.layerInfosObj = null; 
@@ -78,13 +83,20 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 		  if(stateData.extent || stateData.layers) {
 			  this.mapstates = []; 
 			  this.mapstates.push(stateData); 
+			  this.currentIndex = 0; 
 
 			  if(this.mapstates.length === 0){
 				this._readMapstatesInWebmap();
 			  }
 			  this.displayMapstates();
+			  this._switchDeleteBtn(); 
 		  } else {
-			  this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.errorNameEmpty);
+			  var msgText = utils.stripHTML(this.nls.errorNameEmpty); 
+			  msgText = msgText.replace("%mapName%", this.mapName); 
+			  this.mapstateMsgNode.innerHTML = msgText; 
+
+			  this._switchDeleteBtn(); 
+			  this.currentIndex = -1; 
 		  }
 		}));
 	  }, 
@@ -136,14 +148,16 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 	  if (this.mapstates && this.mapstates.length > 0) {
 		  // take the 1st one (assume only one be saved)
 		  var mapstate = this.mapstates[0];
-		  var msgText = utils.stripHTML(this.nls.msgLastStatus); 
+		  var msgText = utils.stripHTML(this.nls.msgStateStatus); 
 		  msgText = msgText.replace("%date%", mapstate.updateDate); 
-		  this.mapstateMsgNode.innerHTML = msgText;
+		  this.mapstateMsgNode.innerHTML = msgText; 
 	  }	else {
-		  this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.errorNameEmpty);
+		  var msgText = utils.stripHTML(this.nls.errorNameEmpty); 
+		  msgText = msgText.replace("%mapName%", this.mapName); 
+		  this.mapstateMsgNode.innerHTML = msgText; 
 	  }
 	  // 
-      this._switchDeleteBtn();
+      //this._switchDeleteBtn();
       this.resize();
     },
 
@@ -159,7 +173,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
     },
 
     _switchDeleteBtn: function(){
-      if(this.currentIndex > -1 && !this.mapstates[this.currentIndex].isInWebmap){
+      if(this.currentIndex > -1){
         html.removeClass(this.btnDelete, 'jimu-state-disabled');
         this._canDelete = true;
       }else{
@@ -180,7 +194,9 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
       html.setStyle(this.errorNode, {visibility: 'hidden'});
       this.errorNode.innerHTML = '&nbsp;';
 
-      this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.msgSaveSuccess);
+	  var msgText = utils.stripHTML(this.nls.msgSaveSuccess); 
+	  msgText = msgText.replace("%mapName%", this.mapName); 
+	  this.mapstateMsgNode.innerHTML = msgText; 
     },
 
 	/*
@@ -207,9 +223,16 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 			  }, 
 			  data: stateDataText
 			}).then(lang.hitch(this, function(data) {
-				console.log('response: ' + data); 
+			  var msgText = utils.stripHTML(this.nls.msgSaveSuccess); 
+			  msgText = msgText.replace("%mapName%", this.mapName); 
+			  this.mapstateMsgNode.innerHTML = msgText; 
+			  // refresh the mapstates variable
+			  this.onOpen();
+			  // 
 			}), lang.hitch(this, function(err) {
-				console.log('error: ' + err); 
+			  var msgText = utils.stripHTML(this.nls.errSaveFailure); 
+			  msgText = msgText.replace("%mapName%", this.mapName); 
+			  this.mapstateMsgNode.innerHTML = msgText; 
 			})); 
 		  } else {
 			// by default, use local storage
@@ -243,7 +266,13 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
       this.resize();
 
       this.currentIndex = -1;
-      this.displayMapstates();
+	  this._switchDeleteBtn(); 
+	  
+      this.displayMapstates();	  
+
+	  var msgText = utils.stripHTML(this.nls.msgDeleteSuccess); 
+	  msgText = msgText.replace("%mapName%", this.mapName); 
+	  this.mapstateMsgNode.innerHTML = msgText; 	  
     },
 	
 	_onRestoreBtnClicked: function() {
@@ -257,7 +286,9 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 			//require the module on demand
 			this._applyAppState(mapstate, this.map); 
 			// 
-			this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.msgLoadSuccess);
+			var msgText = utils.stripHTML(this.nls.msgLoadSuccess); 
+		    msgText = msgText.replace("%mapName%", this.mapName); 
+		    this.mapstateMsgNode.innerHTML = msgText; 
 		}
 	}, 
 
@@ -277,7 +308,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
         }
       }, this);
 
-      this._switchDeleteBtn();
+      //this._switchDeleteBtn();
 
       //require the module on demand
       this._applyAppState(mapstate, this.map); 
