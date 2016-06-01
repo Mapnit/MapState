@@ -321,15 +321,15 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 		var graphicsData = stateData.graphicsLayers; 
 		// no need to check the map itemId
 		// - because the stateData is retrieved for a given map itemId
-		// restore layer visibility
+		// set layer visibility
 		this.layerInfosObj.restoreState({
 		  layerOptions: layerData || null
 		});
-		// restore layer opacity
+		// set layer opacity
         array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
 		  rootLayerInfo.setOpacity(layerData[rootLayerInfo.id].opacity); 
         }, this);
-		// restore layer definitions 
+		// set layer definitions 
         array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
 		  // apply at the map service level
 		  rootLayerInfo.setOpacity(layerData[rootLayerInfo.id].opacity); 
@@ -348,7 +348,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 			    graphicsLayer.add(graphic); 
 		    }, this);
 		}
-		// restore map extent
+		// set map extent
 		if (stateData.extent) {
 		  map.setExtent(stateData.extent);
 		}
@@ -395,7 +395,8 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
     }, 
 	
 	_composeStoreURL: function(action) {
-		return this.storeServiceUrl + "/" + action + "/" + this.userName + "/" + this.map.itemId; 
+		return this.storeServiceUrl + "/" + action 
+			+ "/" + this.userName + "/" + this.map.itemId; 
 	}
 
   });
