@@ -331,10 +331,11 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
         }, this);
 		// set layer definitions 
         array.forEach(this.layerInfosObj.getLayerInfoArray(), function(rootLayerInfo) {
-		  // apply at the map service level
-		  rootLayerInfo.setOpacity(layerData[rootLayerInfo.id].opacity); 
-        }, this);		
-		// restore the graphic layers
+		  if (rootLayerInfo.layerObject) {
+			rootLayerInfo.layerObject.setLayerDefinitions(layerData[rootLayerInfo.id].layerDefinitions); 
+		  }
+        }, this);
+		// set the graphic layers
 		for(var graphicsLayerId in graphicsData) {
 			var graphicsLayer = map.getLayer(graphicsLayerId); 
 			if (! graphicsLayer) {
