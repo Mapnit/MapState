@@ -39,6 +39,9 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
     //use this flag to control delete button
     _canDelete: false,
 	
+    //use this flag to control load button
+    _canLoad: false,
+	
 	constructor: function(options) {
 		this.map = options.map; 
 		if (this.map.itemInfo && this.map.itemInfo.item) {
@@ -72,15 +75,16 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 				this._readMapstatesInWebmap();
 			  }
 			  this.displayMapstates();
-			  this._switchDeleteBtn(); 
 		  } else {
 			  var msgText = utils.stripHTML(this.nls.errorNameEmpty); 
 			  msgText = msgText.replace("%mapName%", this.mapName); 
 			  this.mapstateMsgNode.innerHTML = msgText; 
 
-			  this._switchDeleteBtn(); 
 			  this.currentIndex = -1; 
 		  }
+		  
+		  this._switchDeleteBtn(); 
+		  this._switchLoadBtn(); 
 		}));
 	  }, 
 
@@ -155,6 +159,16 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
       }, this);
     },
 
+    _switchLoadBtn: function(){
+      if(this.currentIndex > -1){
+        html.removeClass(this.btnLoad, 'jimu-state-disabled');
+        this._canLoad = true;
+      }else{
+        html.addClass(this.btnLoad, 'jimu-state-disabled');
+        this._canLoad = false;
+      }
+    },
+	
     _switchDeleteBtn: function(){
       if(this.currentIndex > -1){
         html.removeClass(this.btnDelete, 'jimu-state-disabled');
@@ -223,7 +237,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 				this.map, this.layerInfosObj, this.mapstateName.value);
 			// refresh the mapstates variable
 			this.onOpen();
-			// 			
+			// 	
 		  }
 		})); 
 	   
@@ -250,6 +264,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 
       this.currentIndex = -1;
 	  this._switchDeleteBtn(); 
+	  this._switchLoadBtn(); 
 	  
       this.displayMapstates();	  
 
