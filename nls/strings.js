@@ -1,12 +1,14 @@
 define({
   root: ({
-    labelMapstateName: "Save the current map state",
-    labelPlay: "Play All",
-    labelStop: "Stop",
     labelDelete: "Delete",
-    placeholderMapstateName: "Mapstate Name",
+	labelLoad: "Load", 
+	labelSave: "Save", 
+	labelRestore: "Restore", 
     errorNameExist: "Mapstate exists!",
-    errorNameNull: "Invalid Mapstate name!",
+    errorNameEmpty: "No map state saved",
+	msgSaveSuccess: "Map state saved", 
+	msgLastStatus: "Last Map state saved on %date%", 
+	msgLoadSuccess: "Map state loaded", 
     _widgetLabel: "Map State"
   }),
   "ar": 1,

@@ -66,44 +66,25 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 		this.userName = this.portal.user.username; 
 		/*username and webmap id to serve as a store key*/
 		this.storeKey = this.userName + "_" + this.map.itemId; 
+		/* pre-set the map state name */
+		this.mapstateName = {value: "mapstate"}; 
 		this.MapStateManager = MapStateManager.getInstance(this.storeKey);
 	}, 
-
-    startup: function(){
-      // summary:
-      //    this function will be called when widget is started.
-      // description:
-      //    see dojo's dijit life cycle.
-      this.inherited(arguments);
-
-      this.mapstateList = new TileLayoutContainer({
-        strategy: 'fixWidth',
-        itemSize: {width: 100, height: 92}, //image size is: 100*60,
-        hmargin: 15,
-        vmargin: 5
-      }, this.mapstateListNode);
-
-      this.mapstateList.startup();
-
-      this.own(on(this.mapstateName, 'keydown', lang.hitch(this, function(evt){
-        var keyNum = evt.keyCode !== undefined ? evt.keyCode : evt.which;
-        if (keyNum === 13) {
-          this._onAddBtnClicked();
-        }
-      })));
-    },
 	
 	  _addMapstate: function(stateData) {
 		LayerInfos.getInstance(this.map, this.map.itemInfo)
 		.then(lang.hitch(this, function(layerInfosObj) {
 		  this.layerInfosObj = layerInfosObj;
 		  if(stateData.extent || stateData.layers) {
+			  this.mapstates = []; 
 			  this.mapstates.push(stateData); 
 
 			  if(this.mapstates.length === 0){
 				this._readMapstatesInWebmap();
 			  }
 			  this.displayMapstates();
+		  } else {
+			  this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.errorNameEmpty);
 		  }
 		}));
 	  }, 
@@ -149,29 +130,19 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
       this.resize();
     },
 
-    resize: function(){
-      if(this.mapstateList){
-        this.mapstateList.resize();
-      }
-    },
-
-    destroy: function(){
-      this.mapstateList.destroy();
-      this.inherited(arguments);
-    },
-
     displayMapstates: function() {
       this._processDuplicateName(this.mapstates);
-
-      // summary:
-      //    remove all and then add
-      var items = [];
-      this.mapstateList.empty();
-      array.forEach(this.mapstates, function(mapstate) {
-        items.push(this._createMapstateNode(mapstate));
-      }, this);
-
-      this.mapstateList.addItems(items);
+	  // display the map status status 
+	  if (this.mapstates && this.mapstates.length > 0) {
+		  // take the 1st one (assume only one be saved)
+		  var mapstate = this.mapstates[0];
+		  var msgText = utils.stripHTML(this.nls.msgLastStatus); 
+		  msgText = msgText.replace("%date%", mapstate.updateDate); 
+		  this.mapstateMsgNode.innerHTML = msgText;
+	  }	else {
+		  this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.errorNameEmpty);
+	  }
+	  // 
       this._switchDeleteBtn();
       this.resize();
     },
@@ -197,28 +168,10 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
       }
     },
 
-    _createMapstateNode: function(mapstate) {
-      var thumbnail, node;
-
-      if(mapstate.thumbnail){
-        thumbnail = utils.processUrlInWidgetConfig(mapstate.thumbnail, this.folderUrl);
-      }else{
-        thumbnail = this.folderUrl + 'images/thumbnail_us.png';
-      }
-
-      node = new ImageNode({
-        img: thumbnail,
-        label: mapstate.displayName + '<br/>' + mapstate.updateDate
-      });
-      on(node.domNode, 'click', lang.hitch(this, lang.partial(this._onMapstateClick, mapstate)));
-
-      return node;
-    },
-
-    _onAddBtnClicked: function() {
+    _onSaveBtnClicked: function() {
       if (string.trim(this.mapstateName.value).length === 0) {
         html.setStyle(this.errorNode, {visibility: 'visible'});
-        this.errorNode.innerHTML = utils.stripHTML(this.nls.errorNameNull);
+        this.errorNode.innerHTML = utils.stripHTML(this.nls.errorNameEmpty);
         return;
       }
 
@@ -226,9 +179,8 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 
       html.setStyle(this.errorNode, {visibility: 'hidden'});
       this.errorNode.innerHTML = '&nbsp;';
-      this.mapstateName.value = '';
 
-      this.displayMapstates();
+      this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.msgSaveSuccess);
     },
 
 	/*
@@ -237,26 +189,7 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 	 * - visible layers 
 	 * - drawing 
 	 */
-    _createMapstate: function(){
-	/*
-      var data, b;
-      if(this.appConfig.map['3D']){
-        data = this.map.getCamera(new SpatialReference(4326));
-        b = {
-          name: this.mapstateName.value,
-          camera: [data.x, data.y, data.z, data.heading, data.tilt]
-        };
-      }else{
-        b = {
-          name: this.mapstateName.value,
-          displayName: this.mapstateName.value,
-          extent: this.map.extent.toJson()
-        };
-      }
-      this.mapstates.push(b);
-      this._saveAllToLocalCache();
-	*/
-	
+    _createMapstate: function(){	
 	  LayerInfos.getInstance(this.map, this.map.itemInfo)
 		.then(lang.hitch(this, function(layerInfosObj) {
 		  this.layerInfosObj = layerInfosObj; 
@@ -282,6 +215,9 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 			// by default, use local storage
 			this.MapStateManager.saveMapState(
 				this.map, this.layerInfosObj, this.mapstateName.value);
+			// refresh the mapstates variable
+			this.onOpen();
+			// 			
 		  }
 		})); 
 	   
@@ -309,6 +245,21 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
       this.currentIndex = -1;
       this.displayMapstates();
     },
+	
+	_onRestoreBtnClicked: function() {
+		console.log("restore to the default view"); 
+	}, 
+	
+	_onLoadBtnClicked: function() {
+		if (this.mapstates && this.mapstates.length > 0) {
+			// take the 1st one (assume only one be saved)
+			var mapstate = this.mapstates[0];
+			//require the module on demand
+			this._applyAppState(mapstate, this.map); 
+			// 
+			this.mapstateMsgNode.innerHTML = utils.stripHTML(this.nls.msgLoadSuccess);
+		}
+	}, 
 
 	/*
 	 * Need to apply the saved state to the current map (2D only)
