@@ -16,15 +16,13 @@ define([
   'esri/layers/GraphicsLayer',
   './MapStateManager',  
   'jimu/LayerInfos/LayerInfos',
-  './ImageNode',
-  'jimu/dijit/TileLayoutContainer',
   'jimu/utils',
   'dojo/request/xhr', 
   'libs/storejs/store'
 ],
 function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, string,
   SpatialReference, Extent, Graphic, GraphicsLayer, MapStateManager, LayerInfos, 
-  ImageNode, TileLayoutContainer, utils, xhr, store) {
+  utils, xhr, store) {
   return declare([BaseWidget], {
     //these two properties is defined in the BaseWidget
     baseClass: 'jimu-widget-mapstate',
