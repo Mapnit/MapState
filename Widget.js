@@ -277,6 +277,8 @@ function(declare, lang, array, html, json, BaseWidget, portalUtils, on, aspect, 
 	
 	_onRestoreBtnClicked: function() {
 		console.log("restore to the default view"); 
+		// Reload the current page
+		location.reload();
 	}, 
 	
 	_onLoadBtnClicked: function() {
