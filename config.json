@@ -1,4 +1,4 @@
 {
 	"storeStrategy": "local",
-	"storeServiceUrl": "http://localhost/UserConfig/MapStateService.svc"
+	"storeServiceUrl": "/proxy.js?http://cliang-w530/UserConfig/MapStateService.svc"
 }

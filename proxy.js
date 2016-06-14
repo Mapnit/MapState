@@ -22,6 +22,7 @@ var request = require('request');
 var logger = require('log4js').getLogger('proxy');
 var fs = require('fs');
 var restler = require('restler');
+var sys = require('sys'); 
 
 exports.proxyRequest = function() {
   return function(req, res, next) {
@@ -55,7 +56,11 @@ exports.proxyRequest = function() {
         requestParams = {
           method: 'POST',
           url: url,
+		  // for file upload
           form: req.body,
+		  // for json data
+		  json: req.body,
+		  // 
           rejectUnauthorized: false,
           requestCert: true,
           agent: false,
@@ -89,6 +94,10 @@ exports.proxyRequest = function() {
             });
           });
         }else{
+		  // not a file on POST, assume it be json
+		  //sys.puts('req.body: ' + sys.inspect(req.body));
+		  //requestParams["json"] = requestParams.form; 
+		  //
           r = request(requestParams);
           r.pipe(res);
         }
