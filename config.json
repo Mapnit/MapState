@@ -1,4 +1,6 @@
 {
-	"storeStrategy": "local",
-	"storeServiceUrl": "/proxy.js?http://cliang-w530/UserConfig/MapStateService.svc"
+	"exportWebMapUrl": "http://gis2.logicsolutionsgroup.com/arcgis/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task",
+	"gpServiceUrl": "http://gis2.logicsolutionsgroup.com/arcgis/rest/services/BHP_Demo/MapStates/GPServer/Map%20States", 
+	"gpServiceUrlPortal": "http://gis2.logicsolutionsgroup.com/arcgis/rest/services/BHP_Demo/BHPMapStates/GPServer/Portal%20Handler", 
+	"sortByOptions": ["date", "name", "owner"]
 }

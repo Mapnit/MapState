@@ -1,8 +1,7 @@
 define({
   root: ({
-    storeStrategy: "Store Type",
-    storeServiceUrl: "Store Service URL",
-	localStore: "Local",
-	remoteStore: "Remote"
+    projectPreGPServiceUrl: "Project Preference GP Service URL",
+    printTaskGPServiceUrl: "Print Task GP Service URL", 
+    portalHandlerGPServiceUrl: "Portal Handler GP Service URL"
   })
 });
